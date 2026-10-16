@@ -36,11 +36,11 @@ a { color: #0B4F8A; }
 
 /* Header */
 .bar { position: sticky; top: 0; z-index: 20; background: var(--hivis); border-bottom: 3px solid var(--ink); }
-.bar-in { max-width: 560px; margin: 0 auto; padding: 8px 16px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.bar-in { max-width: 560px; margin: 0 auto; padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .brand { display: flex; align-items: center; gap: 8px; color: var(--ink); min-width: 0; }
-.hat { width: 38px; height: auto; flex: none; }
+.hat { width: 56px; height: auto; flex: none; }
 .hat.small { width: 30px; }
-.brand-name { font-family: var(--sign); font-weight: 800; font-stretch: condensed; font-size: 19px; letter-spacing: .02em; line-height: 1; white-space: nowrap; text-transform: uppercase; }
+.brand-name { font-family: var(--sign); font-weight: 800; font-stretch: condensed; font-size: clamp(24px, 7.4vw, 34px); letter-spacing: .01em; line-height: .95; white-space: normal; text-transform: uppercase; }
 .bar-cta {
   flex: none; border: 0; border-radius: 10px; background: var(--ink); color: var(--hivis);
   font-weight: 700; font-size: 13px; line-height: 1.15; font-family: inherit; padding: 8px 10px; cursor: pointer; max-width: 118px; text-align: center;

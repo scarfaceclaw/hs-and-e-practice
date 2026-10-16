@@ -1,11 +1,15 @@
-// HS&E Test Practice: the 10-question taster and the launch-list sign-up.
-// No cookies, no browser storage, no tracking, and the page never reads its own address.
+// HS&E Test Practice: the free 50-question mock, the 10-question taster and the launch-list sign-up.
+// No cookies, no tracking and no browser storage (unless option 4B is switched on in config.js),
+// and the page does not read its own address (unless SITE.readSourceFromAddress is switched on).
 (function () {
   "use strict";
 
-  var Q = window.TASTER || [];
+  var BASE = document.currentScript ? document.currentScript.src : location.href;
+  var TASTER = window.TASTER || [];
   var LETTERS = ["A", "B", "C", "D", "E"];
-  var state = { i: 0, picked: [], lang: "" };
+  var TOPICS = ["Working environment", "Occupational health", "Safety", "High risk activities", "Specialist"];
+  var MOCK_SIZE = 50, PER_TOPIC = 10, MOCK_SECONDS = 45 * 60;
+  var lang = "";
 
   function $(id) { return document.getElementById(id); }
   function el(tag, cls, text) {
@@ -16,8 +20,22 @@
   }
   function help(text, cls) {
     var p = el("p", "help " + (cls || ""), text);
-    p.lang = state.lang;
+    p.lang = lang;
     return p;
+  }
+  function shuffle(a) {
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1)), t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a;
+  }
+  function range(n) { var a = []; for (var i = 0; i < n; i++) a.push(i); return a; }
+  function loadScript(file, done) {
+    var s = document.createElement("script");
+    s.src = new URL(file, BASE).href;
+    s.onload = function () { done(true); };
+    s.onerror = function () { done(false); };
+    document.head.appendChild(s);
   }
 
   // ---- Contact placeholders (filled from config.js) ----
@@ -74,94 +92,81 @@
       }
     }
   };
+  var signN = 0;
   function signFigure(kind) {
     var s = SIGNS[kind];
     if (!s) return null;
     var fig = el("div", "sign");
     fig.innerHTML = '<svg viewBox="0 0 100 100" role="img" aria-label="Safety sign. ' + s.looks + '">' +
-      s.svg("clip-" + kind + "-" + state.i) + "</svg>";
+      s.svg("clip-" + kind + "-" + (++signN)) + "</svg>";
     return fig;
   }
 
-  // ---- Help language ----
-  function setLang(code) {
-    state.lang = code || "";
-    document.querySelectorAll(".chip").forEach(function (c) {
-      var on = c.getAttribute("data-lang") === state.lang;
-      c.classList.toggle("on", on);
-      c.setAttribute("aria-pressed", on ? "true" : "false");
-    });
-    $("langSelect").value = state.lang;
-    if (!$("quiz").hidden) render();
-  }
-  document.querySelectorAll(".chip").forEach(function (c) {
-    c.addEventListener("click", function () { setLang(c.getAttribute("data-lang")); });
-  });
-  $("langSelect").addEventListener("change", function (e) { setLang(e.target.value); });
-
-  // ---- The taster ----
-  function show(section) {
-    ["intro", "quiz", "score"].forEach(function (s) { $(s).hidden = s !== section; });
-    $("nextBar").hidden = true;
-    window.scrollTo(0, 0);
-  }
-
-  function start() {
-    state.i = 0;
-    state.picked = [];
-    show("quiz");
-    render();
-  }
-  $("start").addEventListener("click", start);
-  $("again").addEventListener("click", start);
-
-  function segs() {
-    var box = $("segs");
-    box.innerHTML = "";
-    Q.forEach(function (q, n) {
-      var s = el("span", "seg");
-      if (n < state.picked.length) s.classList.add(state.picked[n] === Q[n].correct ? "right" : "wrong");
-      if (n === state.i) s.classList.add("now");
-      box.appendChild(s);
+  // ---- The mock's bank and help languages load after the first screen, so it shows at once ----
+  var bankWaiters = [];
+  function withBank(fn) {
+    if (window.BANK) return fn();
+    bankWaiters.push(fn);
+    if (bankWaiters.length === 1) loadScript("bank.js", function (ok) {
+      if (!ok) { bankWaiters = []; alert("The mock did not load. Please check your connection and try again."); return; }
+      var w = bankWaiters; bankWaiters = [];
+      w.forEach(function (f) { f(); });
     });
   }
+  window.addEventListener("load", function () { setTimeout(function () { withBank(function () {
+    $("poolCount").textContent = String(window.BANK.length);
+  }); }, 300); });
 
-  function render() {
-    var q = Q[state.i];
-    var t = state.lang ? q.help[state.lang] : null;
-    var picked = state.picked[state.i];
-    var answered = picked != null;
-    var body = $("qbody");
-    body.innerHTML = "";
-    $("qcount").textContent = "Question " + (state.i + 1) + " of " + Q.length;
-    segs();
+  var helpLoading = {};
+  function needHelp(code) {
+    if (!code || (window.HELP && window.HELP[code]) || helpLoading[code]) return;
+    helpLoading[code] = true;
+    loadScript("help/" + code + ".js", function () { helpLoading[code] = false; refresh(); });
+  }
 
-    var card = el("div", "qcard" + (answered ? " done" : ""));
-    var head = el("div", "qhead" + (q.sign ? " has-sign" : ""));
-    var fig = q.sign ? signFigure(q.sign) : null;
+  // ---- One question, in any order. item = { q, order, help(code) } ----
+  function view(item) {
+    var q = item.q, o = item.order;
+    var t = lang ? item.help(lang) : null;
+    function wn(map) { var r = {}; Object.keys(map || {}).forEach(function (k) { r[o.indexOf(+k)] = map[k]; }); return r; }
+    return {
+      q: q, options: o.map(function (i) { return q.options[i]; }), correct: o.indexOf(q.correct), whyNot: wn(q.why_not),
+      t: t ? { question: t.question, options: o.map(function (i) { return t.options[i]; }), explanation: t.explanation, whyNot: wn(t.why_not) } : null
+    };
+  }
+  function tasterItem(q) { return { q: q, order: range(q.options.length), help: function (c) { return q.help[c]; } }; }
+  function bankItem(q) {
+    return { q: q, order: shuffle(range(q.options.length)),
+      help: function (c) { return window.HELP && window.HELP[c] ? window.HELP[c][q.id] : null; } };
+  }
+
+  // mode: "ask" (tap to answer, the answer shows at once), "mock" (tap to choose, no marks), "done" (marked)
+  function questionCard(v, mode, picked, onPick) {
+    var card = el("div", "qcard" + (mode === "done" ? " done" : ""));
+    var head = el("div", "qhead" + (v.q.sign ? " has-sign" : ""));
+    var fig = v.q.sign ? signFigure(v.q.sign) : null;
     if (fig) head.appendChild(fig);
     var words = el("div", "qwords");
-    words.appendChild(el("p", "area", q.area));
-    words.appendChild(el("h2", "qtext", q.question));
-    if (t) words.appendChild(help(t.question, "qhelp"));
+    words.appendChild(el("p", "area", v.q.area || v.q.topic));
+    words.appendChild(el("h2", "qtext", v.q.question));
+    if (v.t) words.appendChild(help(v.t.question, "qhelp"));
     head.appendChild(words);
     card.appendChild(head);
 
     var list = el("div", "opts");
     list.setAttribute("role", "group");
     list.setAttribute("aria-label", "Answers");
-    q.options.forEach(function (text, n) {
+    v.options.forEach(function (text, n) {
       var b = el("button", "opt");
       b.type = "button";
-      var badge = el("span", "badge", LETTERS[n]);
       var w = el("span", "otext");
       w.appendChild(el("span", "oen", text));
-      if (t) { var h = el("span", "help ohelp", t.options[n]); h.lang = state.lang; w.appendChild(h); }
-      b.appendChild(badge);
+      if (v.t) { var h = el("span", "help ohelp", v.t.options[n]); h.lang = lang; w.appendChild(h); }
+      b.appendChild(el("span", "badge", LETTERS[n]));
       b.appendChild(w);
-      if (answered) {
+      if (mode === "done") {
         b.disabled = true;
-        if (n === q.correct) {
+        if (n === v.correct) {
           b.classList.add(n === picked ? "right-chosen" : "right-missed");
           w.appendChild(el("span", "onote", n === picked ? "Your answer: right" : "Right answer"));
         } else if (n === picked) {
@@ -171,80 +176,285 @@
           b.classList.add("other");
         }
       } else {
-        b.addEventListener("click", function () { answer(n); });
+        if (n === picked) { b.classList.add("chosen"); b.setAttribute("aria-pressed", "true"); }
+        b.addEventListener("click", function () { onPick(n); });
       }
       list.appendChild(b);
     });
     card.appendChild(list);
-    body.appendChild(card);
+    return card;
+  }
 
-    if (answered) {
-      var right = picked === q.correct;
-      var fb = el("div", "feedback " + (right ? "is-right" : "is-wrong"));
-      fb.setAttribute("role", "status");
-      fb.appendChild(el("p", "verdict", right ? "Right" : "Wrong · The right answer is " + LETTERS[q.correct] + "."));
-
-      if (!right && q.why_not[String(picked)]) {
-        var not = el("div", "why why-not-first");
-        not.appendChild(el("p", "why-h", "Why " + LETTERS[picked] + " is wrong"));
-        not.appendChild(el("p", "why-t", q.why_not[String(picked)]));
-        if (t && t.why_not[String(picked)]) not.appendChild(help(t.why_not[String(picked)]));
-        fb.appendChild(not);
-      }
-
-      var why = el("div", "why" + (right ? "" : " why-after"));
-      why.appendChild(el("p", "why-h", right ? "Why" : "Why " + LETTERS[q.correct] + " is right"));
-      why.appendChild(el("p", "why-t", q.explanation));
-      if (t) why.appendChild(help(t.explanation));
-      fb.appendChild(why);
-
-      var src = el("p", "source");
-      src.appendChild(document.createTextNode("Source: "));
-      var a = el("a", null, q.source_title);
-      a.href = q.source_url;
-      a.rel = "noopener noreferrer";
-      a.target = "_blank";
-      src.appendChild(a);
-      fb.appendChild(src);
-      body.appendChild(fb);
-
-      $("next").textContent = state.i === Q.length - 1 ? "See your score" : "Next question";
-      $("nextBar").hidden = false;
-    } else {
-      $("nextBar").hidden = true;
+  function feedback(v, picked) {
+    var right = picked === v.correct, none = picked == null;
+    var fb = el("div", "feedback " + (right ? "is-right" : "is-wrong"));
+    fb.setAttribute("role", "status");
+    fb.appendChild(el("p", "verdict", right ? "Right" :
+      (none ? "Not answered · " : "Wrong · ") + "The right answer is " + LETTERS[v.correct] + "."));
+    if (!right && !none && v.whyNot[picked]) {
+      var not = el("div", "why why-not-first");
+      not.appendChild(el("p", "why-h", "Why " + LETTERS[picked] + " is wrong"));
+      not.appendChild(el("p", "why-t", v.whyNot[picked]));
+      if (v.t && v.t.whyNot[picked]) not.appendChild(help(v.t.whyNot[picked]));
+      fb.appendChild(not);
     }
+    var why = el("div", "why" + (right || none ? "" : " why-after"));
+    why.appendChild(el("p", "why-h", right ? "Why" : "Why " + LETTERS[v.correct] + " is right"));
+    why.appendChild(el("p", "why-t", v.q.explanation));
+    if (v.t) why.appendChild(help(v.t.explanation));
+    fb.appendChild(why);
+    var src = el("p", "source");
+    src.appendChild(document.createTextNode("Source: "));
+    var a = el("a", null, v.q.source_title);
+    a.href = v.q.source_url;
+    a.rel = "noopener noreferrer";
+    a.target = "_blank";
+    src.appendChild(a);
+    fb.appendChild(src);
+    return fb;
   }
 
-  function answer(n) {
-    if (state.picked[state.i] != null) return;
-    state.picked[state.i] = n;
-    render();
+  function segs(box, n, cls) {
+    box.innerHTML = "";
+    for (var i = 0; i < n; i++) box.appendChild(el("span", "seg " + (cls(i) || "")));
   }
 
+  // ---- Screens ----
+  var SECTIONS = ["intro", "quiz", "score", "mock", "mockScore", "review"];
+  var current = "intro";
+  function show(section) {
+    current = section;
+    SECTIONS.forEach(function (s) { $(s).hidden = s !== section; });
+    $("nextBar").hidden = true;
+    $("signup").hidden = section === "mock" || section === "review";
+    window.scrollTo(0, 0);
+  }
+  function refresh() {
+    if (current === "quiz") renderTaster();
+    else if (current === "mock") renderMock();
+    else if (current === "review") renderReview();
+  }
+
+  // ---- Help language ----
+  var LANG_NAMES = [["", "English only"], ["pl", "Polski"], ["ro", "Română"], ["bg", "Български"], ["lt", "Lietuvių"], ["pa", "ਪੰਜਾਬੀ"], ["pt", "Português"]];
+  document.querySelectorAll(".langSelect").forEach(function (sel) {
+    LANG_NAMES.forEach(function (l) {
+      var o = el("option", null, l[1]);
+      o.value = l[0];
+      if (l[0]) o.lang = l[0];
+      sel.appendChild(o);
+    });
+    sel.addEventListener("change", function (e) { setLang(e.target.value); });
+  });
+  function setLang(code) {
+    lang = code || "";
+    document.querySelectorAll(".chip").forEach(function (c) {
+      var on = c.getAttribute("data-lang") === lang;
+      c.classList.toggle("on", on);
+      c.setAttribute("aria-pressed", on ? "true" : "false");
+    });
+    document.querySelectorAll(".langSelect").forEach(function (s) { s.value = lang; });
+    if (current === "mock" || current === "review") needHelp(lang);
+    refresh();
+  }
+  document.querySelectorAll(".chip").forEach(function (c) {
+    c.addEventListener("click", function () { setLang(c.getAttribute("data-lang")); });
+  });
+
+  // ---- The 10-question taster: the answer and the reason after each one ----
+  var taster = { items: TASTER.map(tasterItem), i: 0, picked: [] };
+  function startTaster() {
+    taster.i = 0;
+    taster.picked = [];
+    show("quiz");
+    renderTaster();
+  }
+  $("start").addEventListener("click", startTaster);
+  $("again").addEventListener("click", startTaster);
+  $("mockToTaster").addEventListener("click", startTaster);
+
+  function renderTaster() {
+    var item = taster.items[taster.i], v = view(item), picked = taster.picked[taster.i], answered = picked != null;
+    var body = $("qbody");
+    body.innerHTML = "";
+    $("qcount").textContent = "Question " + (taster.i + 1) + " of " + taster.items.length;
+    segs($("segs"), taster.items.length, function (n) {
+      if (n === taster.i) return "now";
+      if (n < taster.picked.length) return taster.picked[n] === view(taster.items[n]).correct ? "right" : "wrong";
+    });
+    body.appendChild(questionCard(v, answered ? "done" : "ask", picked, function (n) {
+      if (taster.picked[taster.i] != null) return;
+      taster.picked[taster.i] = n;
+      renderTaster();
+    }));
+    if (answered) {
+      body.appendChild(feedback(v, picked));
+      $("next").textContent = taster.i === taster.items.length - 1 ? "See your score" : "Next question";
+    }
+    $("nextBar").hidden = !answered;
+  }
   $("next").addEventListener("click", function () {
-    if (state.i < Q.length - 1) {
-      state.i += 1;
-      render();
+    if (taster.i < taster.items.length - 1) {
+      taster.i += 1;
+      renderTaster();
       window.scrollTo(0, 0);
     } else {
-      finish();
+      var got = 0;
+      $("scoreDots").innerHTML = "";
+      taster.items.forEach(function (it, n) {
+        var ok = taster.picked[n] === view(it).correct;
+        if (ok) got++;
+        $("scoreDots").appendChild(el("span", "dot " + (ok ? "right" : "wrong")));
+      });
+      $("scoreLine").textContent = "You got " + got + " of " + taster.items.length + ".";
+      show("score");
     }
   });
 
-  function finish() {
-    var got = state.picked.filter(function (p, n) { return p === Q[n].correct; }).length;
-    $("scoreLine").textContent = "You got " + got + " of " + Q.length + ".";
-    var dots = $("scoreDots");
-    dots.innerHTML = "";
-    Q.forEach(function (q, n) {
-      dots.appendChild(el("span", "dot " + (state.picked[n] === q.correct ? "right" : "wrong")));
-    });
-    show("score");
+  // ---- The timed 50-question mock: no marks until the end ----
+  var mock = null, tick = null;
+  function buildMock() {
+    var byTopic = {};
+    window.BANK.forEach(function (q) { (byTopic[q.topic] = byTopic[q.topic] || []).push(q); });
+    var picked = [];
+    TOPICS.forEach(function (t) { picked = picked.concat(shuffle((byTopic[t] || []).slice()).slice(0, PER_TOPIC)); });
+    return shuffle(picked).slice(0, MOCK_SIZE).map(bankItem);
   }
+  function startMock() {
+    withBank(function () {
+      mock = { items: buildMock(), answers: [], i: 0, endAt: Date.now() + MOCK_SECONDS * 1000, confirming: false, timeUp: false };
+      needHelp(lang);
+      show("mock");
+      renderMock();
+      clearInterval(tick);
+      tick = setInterval(updateTimer, 1000);
+      updateTimer();
+    });
+  }
+  $("startMock").addEventListener("click", startMock);
+  $("scoreToMock").addEventListener("click", startMock);
+  $("mockAgain").addEventListener("click", startMock);
+
+  function secondsLeft() { return Math.max(0, Math.round((mock.endAt - Date.now()) / 1000)); }
+  function updateTimer() {
+    if (!mock || current !== "mock") return;
+    var s = secondsLeft();
+    $("timer").textContent = Math.floor(s / 60) + ":" + ("0" + (s % 60)).slice(-2) + " left";
+    $("timer").classList.toggle("low", s <= 5 * 60);
+    if (s === 0) { mock.timeUp = true; finishMock(); }
+  }
+
+  function answeredCount() { return mock.answers.filter(function (a) { return a != null; }).length; }
+  function renderMock() {
+    var body = $("mbody");
+    body.innerHTML = "";
+    $("mcount").textContent = (mock.i + 1) + " of " + mock.items.length;
+    segs($("msegs"), mock.items.length, function (n) {
+      return n === mock.i ? "now" : (mock.answers[n] != null ? "done" : "");
+    });
+    if (mock.confirming) return renderConfirm(body);
+    var v = view(mock.items[mock.i]);
+    body.appendChild(questionCard(v, "mock", mock.answers[mock.i], function (n) {
+      mock.answers[mock.i] = n;
+      renderMock();
+    }));
+    body.appendChild(el("p", "mock-hint", mock.answers[mock.i] == null
+      ? "Tap an answer. You can change it until you finish. Marks and reasons come at the end."
+      : "Answer saved. You can change it until you finish."));
+    $("mback").disabled = mock.i === 0;
+    $("mnext").textContent = mock.i === mock.items.length - 1 ? "Finish the mock" : "Next";
+    $("mockBar").hidden = false;
+  }
+  function renderConfirm(body) {
+    $("mockBar").hidden = true;
+    var box = el("div", "confirm");
+    var left = mock.items.length - answeredCount();
+    box.appendChild(el("h2", null, "Finish the mock?"));
+    box.appendChild(el("p", null, "You have answered " + answeredCount() + " of " + mock.items.length + "." +
+      (left ? " " + left + " not answered yet:" : "")));
+    if (left) {
+      var jumps = el("div", "jumps");
+      mock.items.forEach(function (it, n) {
+        if (mock.answers[n] != null) return;
+        var b = el("button", "jump", String(n + 1));
+        b.type = "button";
+        b.setAttribute("aria-label", "Go to question " + (n + 1));
+        b.addEventListener("click", function () { mock.confirming = false; mock.i = n; renderMock(); window.scrollTo(0, 0); });
+        jumps.appendChild(b);
+      });
+      box.appendChild(jumps);
+    }
+    var fin = el("button", "big", "Finish and see my score");
+    fin.type = "button";
+    fin.addEventListener("click", finishMock);
+    var keep = el("button", "again", "Keep going");
+    keep.type = "button";
+    keep.addEventListener("click", function () { mock.confirming = false; renderMock(); });
+    box.appendChild(fin);
+    box.appendChild(keep);
+    body.appendChild(box);
+  }
+  $("mback").addEventListener("click", function () { if (mock.i > 0) { mock.i--; renderMock(); window.scrollTo(0, 0); } });
+  $("mnext").addEventListener("click", function () {
+    if (mock.i < mock.items.length - 1) { mock.i++; renderMock(); window.scrollTo(0, 0); }
+    else { mock.confirming = true; renderMock(); window.scrollTo(0, 0); }
+  });
+  $("mfinish").addEventListener("click", function () { mock.confirming = true; renderMock(); window.scrollTo(0, 0); });
+
+  function finishMock() {
+    clearInterval(tick);
+    var got = 0, per = {};
+    TOPICS.forEach(function (t) { per[t] = [0, 0]; });
+    mock.wrong = [];
+    mock.items.forEach(function (it, n) {
+      var ok = mock.answers[n] === view(it).correct;
+      per[it.q.topic][1]++;
+      if (ok) { got++; per[it.q.topic][0]++; } else mock.wrong.push(n);
+    });
+    $("timeUp").hidden = !mock.timeUp;
+    $("mScoreLine").textContent = "You got " + got + " of " + mock.items.length + ".";
+    var box = $("mTopics");
+    box.innerHTML = "";
+    TOPICS.forEach(function (t) {
+      var row = el("div", "trow");
+      row.appendChild(el("span", "tname", t));
+      var cells = el("span", "tcells");
+      for (var i = 0; i < per[t][1]; i++) cells.appendChild(el("span", "tcell" + (i < per[t][0] ? " ok" : "")));
+      row.appendChild(cells);
+      row.appendChild(el("span", "tnum", per[t][0] + " of " + per[t][1]));
+      box.appendChild(row);
+    });
+    var w = mock.wrong.length;
+    $("toReview").hidden = w === 0;
+    $("toReview").textContent = "Go over your " + w + " wrong answer" + (w === 1 ? "" : "s");
+    show("mockScore");
+  }
+
+  // ---- Going over the mock: the right answer, why yours is wrong, and why the right one is right ----
+  var rev = { i: 0 };
+  $("toReview").addEventListener("click", function () { rev.i = 0; needHelp(lang); show("review"); renderReview(); });
+  function renderReview() {
+    var n = mock.wrong[rev.i], v = view(mock.items[n]), picked = mock.answers[n];
+    var body = $("rbody");
+    body.innerHTML = "";
+    $("rcount").textContent = "Wrong answer " + (rev.i + 1) + " of " + mock.wrong.length;
+    body.appendChild(el("p", "rnum", "Mock question " + (n + 1) + " of " + mock.items.length));
+    body.appendChild(questionCard(v, "done", picked));
+    body.appendChild(feedback(v, picked));
+    $("rback").disabled = rev.i === 0;
+    $("rnext").textContent = rev.i === mock.wrong.length - 1 ? "Back to your score" : "Next wrong answer";
+  }
+  $("rback").addEventListener("click", function () { if (rev.i > 0) { rev.i--; renderReview(); window.scrollTo(0, 0); } });
+  $("rnext").addEventListener("click", function () {
+    if (rev.i < mock.wrong.length - 1) { rev.i++; renderReview(); window.scrollTo(0, 0); }
+    else show("mockScore");
+  });
 
   // ---- Header button and notice ----
   document.querySelectorAll("[data-go]").forEach(function (b) {
     b.addEventListener("click", function () {
+      if (current === "mock" && !confirm("Leave the mock? Your answers will not be marked.")) return;
+      if (current === "mock" || current === "review") { clearInterval(tick); show("intro"); }
       $(b.getAttribute("data-go")).scrollIntoView({ behavior: "smooth", block: "start" });
     });
   });
@@ -258,6 +468,53 @@
     $("noticeLink").focus();
   });
 
+  // ---- Where the visitor came from: fixed in the HTML unless switched on in config.js ----
+  var site = window.SITE || {};
+  if (site.readSourceFromAddress) {
+    try {
+      var qs = new URLSearchParams(location.search);
+      var src = (qs.get("src") || qs.get("utm_source") || "").trim();
+      if (/^[A-Za-z0-9_-]{1,40}$/.test(src)) $("form").source.value = src;
+    } catch (e) { /* keep the fixed value */ }
+  }
+
+  // ---- Option 4B (OFF unless config.js GTAG.enabled): nothing from Google loads before Allow ----
+  var G = window.GTAG || {};
+  var tagOn = !!(G.enabled && G.noticeCookies && !/PLACEHOLDER/.test(G.id + G.sendTo));
+  var adConsent = "";
+  function loadTag() {
+    if (window.gtag) return;
+    window.dataLayer = window.dataLayer || [];
+    window.gtag = function () { window.dataLayer.push(arguments); };
+    window.gtag("consent", "default", { ad_storage: "granted", ad_user_data: "granted", analytics_storage: "granted", ad_personalization: "denied" });
+    window.gtag("js", new Date());
+    window.gtag("config", G.id);
+    var s = document.createElement("script");
+    s.async = true;
+    s.src = "https://www.googletagmanager.com/gtag/js?id=" + encodeURIComponent(G.id);
+    document.head.appendChild(s);
+  }
+  function choose(c) {
+    adConsent = c;
+    try { localStorage.setItem("ad-consent", c); } catch (e) { /* ask again next visit */ }
+    $("consent").hidden = true;
+    if (c === "granted") loadTag();
+    else if (window.gtag) window.gtag("consent", "update", { ad_storage: "denied", ad_user_data: "denied", analytics_storage: "denied" });
+  }
+  if (G.enabled && !tagOn) console.warn("GTAG.enabled is set but ids or noticeCookies are missing: the tag stays off.");
+  if (tagOn) {
+    document.querySelector("[data-cookies]").textContent = G.noticeCookies;
+    $("adSettingsWrap").hidden = false;
+    $("adSettings").addEventListener("click", function (e) { e.preventDefault(); $("consent").hidden = false; });
+    $("cAllow").addEventListener("click", function () { choose("granted"); });
+    $("cDeny").addEventListener("click", function () { choose("denied"); });
+    $("cMore").addEventListener("click", function () { $("consentMore").hidden = false; });
+    var saved = "";
+    try { saved = localStorage.getItem("ad-consent") || ""; } catch (e) { saved = ""; }
+    if (saved === "granted" || saved === "denied") { adConsent = saved; if (saved === "granted") loadTag(); }
+    else $("consent").hidden = false;
+  }
+
   // ---- Sign-up: posts to the Google Form (config.js). No cookies are sent, and no page address. ----
   $("form").addEventListener("submit", function (e) {
     e.preventDefault();
@@ -269,7 +526,7 @@
 
     var cfg = window.FORM || {};
     var en = cfg.entries || {};
-    if (!cfg.action || /PLACEHOLDER/.test(cfg.action + JSON.stringify(en))) {
+    if (!cfg.action || /PLACEHOLDER/.test(cfg.action + en.email + en.test + en.language + en.source + en.notice + en.honeypot)) {
       $("sendErr").textContent = "Sign-up is not switched on yet. Please try again later.";
       $("sendErr").hidden = false;
       return;
@@ -280,6 +537,7 @@
     if (f.language.value) body.append(en.language, f.language.value);
     body.append(en.source, f.source.value);
     body.append(en.notice, cfg.notice);
+    if (tagOn && en.adConsent && !/PLACEHOLDER/.test(en.adConsent)) body.append(en.adConsent, adConsent || "not asked");
     if (f.website.value) body.append(en.honeypot, f.website.value);
 
     $("send").disabled = true;
@@ -289,6 +547,7 @@
       f.querySelectorAll("input, select, button").forEach(function (x) { x.disabled = true; });
       $("thanks").hidden = false;
       $("sendErr").hidden = true;
+      if (tagOn && adConsent === "granted" && window.gtag) window.gtag("event", "conversion", { send_to: G.sendTo });
     }).catch(function () {
       $("send").disabled = false;
       $("sendErr").textContent = "That did not send. Please check your connection and try again.";

@@ -20,7 +20,7 @@ window.FORM = {
 };
 
 window.CONTACT = {
-  email: "[business email]",
+  email: "hsande@protonmail.com",
   address: "[geographic address]"
 };
 

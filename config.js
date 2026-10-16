@@ -21,7 +21,7 @@ window.FORM = {
 
 window.CONTACT = {
   email: "hsande@protonmail.com",
-  address: "[geographic address]"
+  address: "68 Woodland Avenue, Hutton, Brentwood, Essex CM13 1HH"
 };
 
 window.SITE = {

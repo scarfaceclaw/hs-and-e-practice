@@ -4,15 +4,15 @@
 
 window.FORM = {
   // The Google Form's "formResponse" address, e.g. https://docs.google.com/forms/d/e/<id>/formResponse
-  action: "PLACEHOLDER_FORM_ACTION_URL",
+  action: "https://docs.google.com/forms/d/e/1FAIpQLSdEN6-r3TmhM90jClD0oheae4ZE6xiPnSGhKj54IqJ_Bx2-ZA/formResponse",
   // Each question's entry id from the Form's pre-filled link, e.g. "entry.123456789"
   entries: {
-    email: "entry.PLACEHOLDER_EMAIL",
-    test: "entry.PLACEHOLDER_TEST",            // optional answer
-    language: "entry.PLACEHOLDER_LANGUAGE",    // optional answer
-    source: "entry.PLACEHOLDER_SOURCE",        // fixed in the HTML: "site" here, "google-ads" on /go/
-    notice: "entry.PLACEHOLDER_NOTICE",        // the notice version below
-    honeypot: "entry.PLACEHOLDER_HONEYPOT",    // real visitors never see it; delete posts that fill it
+    email: "entry.1076873440",
+    test: "entry.544830307",            // optional answer
+    language: "entry.1480311296",    // optional answer
+    source: "entry.1087506492",        // fixed in the HTML: "site" here, "google-ads" on /go/
+    notice: "entry.1814081109",        // the notice version below
+    honeypot: "entry.1668145513",    // real visitors never see it; delete posts that fill it
     adConsent: "entry.PLACEHOLDER_AD_CONSENT"  // only used if GTAG.enabled (option 4B): "granted" / "denied"
   },
   // Change this whenever the words beside the button or the full notice change.

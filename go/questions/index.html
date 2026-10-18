@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="format-detection" content="telephone=no, email=no, address=no">
+<title>HS&amp;E Test Practice: free 50-question mock test</title>
+<meta name="description" content="A free, timed 50-question mock and 10 quick practice questions for the CITB HS&amp;E test, with the reason for every answer. Independent site, not made, approved or endorsed by CITB or CSCS.">
+<meta name="theme-color" content="#FFD200">
+<link rel="icon" href="../../icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../style.css">
+</head>
+<body>
+
+<header class="bar">
+  <div class="bar-in">
+    <span class="brand" aria-label="HS&amp;E Test Practice">
+      <svg class="hat" viewBox="102 116 820 536" aria-hidden="true"><use href="#hat"/></svg>
+      <span class="brand-name">HS&amp;E Test Practice</span>
+    </span>
+    <button type="button" class="bar-cta" data-go="signup">Tell me when it launches</button>
+  </div>
+</header>
+
+<main>
+  <!-- 1. The first screen -->
+  <section id="intro" class="board">
+    <div class="wrap">
+      <h1>Free HS&amp;E mock test: <span class="nowrap">50 questions,</span> <span class="nowrap">45 minutes</span></h1>
+      <p class="promise">Free. No sign-up. See why each answer is right.</p>
+
+      <div class="start-card">
+        <button type="button" class="big" id="startMock">Start the 50-question mock test<small>Operatives test · 45-minute timer</small></button>
+        <button type="button" class="second" id="start">Or try 10 quick questions<small>A short taster: the answer after each one</small></button>
+      </div>
+      <div class="langs">
+        <p class="langs-h">Help in your language <span>(optional, the English stays)</span></p>
+        <div class="chips" role="group" aria-label="Help language">
+          <button type="button" class="chip on" data-lang="">English only</button>
+          <button type="button" class="chip" data-lang="pl" lang="pl">Polski</button>
+          <button type="button" class="chip" data-lang="ro" lang="ro">Română</button>
+          <button type="button" class="chip" data-lang="bg" lang="bg">Български</button>
+          <button type="button" class="chip" data-lang="lt" lang="lt">Lietuvių</button>
+          <button type="button" class="chip" data-lang="pa" lang="pa">ਪੰਜਾਬੀ</button>
+          <button type="button" class="chip" data-lang="pt" lang="pt">Português</button>
+        </div>
+      </div>
+
+      <p class="pool">The HS&amp;E test itself has 50 questions in 45 minutes, and you need 45 right to pass. To apply for a CSCS card you need to have passed the right HS&amp;E test, or an approved alternative.</p>
+      <p class="pool">Each mock is a new mix of 50 from <b id="poolCount">310</b> practice questions, 10 from each of the 5 Operatives topics. At the end you get your score, then the right answer and the reason for every one you got wrong.</p>
+    </div>
+    <div class="stripes" aria-hidden="true"></div>
+  </section>
+
+  <!-- 2a. The 10-question taster -->
+  <section id="quiz" class="quiz" hidden>
+    <div class="quiz-top">
+      <div class="wrap quiz-top-in">
+        <span id="qcount" class="qcount">Question 1 of 10</span>
+        <label class="lang-pick"><span class="sr">Help language</span><select class="langSelect"></select></label>
+      </div>
+      <div class="wrap"><div class="segs" id="segs" aria-hidden="true"></div></div>
+    </div>
+    <div class="wrap" id="qbody"></div>
+    <div class="next-bar" id="nextBar" hidden>
+      <div class="wrap"><button type="button" class="big" id="next">Next question</button></div>
+    </div>
+  </section>
+
+  <section id="score" class="score wrap" hidden>
+    <div class="score-card">
+      <p class="score-big" id="scoreLine">You got 7 of 10.</p>
+      <div class="score-dots" id="scoreDots" aria-hidden="true"></div>
+      <p class="score-note">This is a short taster. It cannot tell you whether you will pass.</p>
+      <button type="button" class="big" id="scoreToMock">Now try the 50-question mock test</button>
+      <button type="button" class="again" id="again">Try the 10 again</button>
+    </div>
+  </section>
+
+  <!-- 2b. The timed 50-question mock -->
+  <section id="mock" class="quiz" hidden>
+    <div class="quiz-top">
+      <div class="wrap quiz-top-in">
+        <span id="mcount" class="qcount">1 of 50</span>
+        <span class="timer" id="timer" role="timer" aria-label="Time left">45:00</span>
+        <label class="lang-pick"><span class="sr">Help language</span><select class="langSelect"></select></label>
+      </div>
+      <div class="wrap"><div class="segs fifty" id="msegs" aria-hidden="true"></div></div>
+    </div>
+    <div class="wrap" id="mbody"></div>
+    <div class="next-bar" id="mockBar">
+      <div class="wrap two">
+        <button type="button" class="back" id="mback">Back</button>
+        <button type="button" class="big" id="mnext">Next</button>
+      </div>
+      <div class="wrap"><button type="button" class="finish-link" id="mfinish">Finish the mock now</button></div>
+    </div>
+  </section>
+
+  <section id="mockScore" class="score wrap" hidden>
+    <div class="score-card">
+      <p class="timeup" id="timeUp" hidden>Time is up.</p>
+      <p class="score-big" id="mScoreLine">You got 41 of 50.</p>
+      <p class="score-need">You need 45 right to pass the real test.</p>
+      <div class="topics" id="mTopics"></div>
+      <p class="score-note">This mock is practice, not the real test. It cannot tell you whether you will pass.</p>
+      <button type="button" class="big" id="toReview">Go over your wrong answers</button>
+      <div class="score-more">
+        <button type="button" class="again" id="mockAgain">Start a new mock</button>
+        <button type="button" class="again" id="mockToTaster">Try 10 quick questions</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="review" class="quiz" hidden>
+    <div class="quiz-top">
+      <div class="wrap quiz-top-in">
+        <span id="rcount" class="qcount">Wrong answer 1 of 9</span>
+        <label class="lang-pick"><span class="sr">Help language</span><select class="langSelect"></select></label>
+      </div>
+    </div>
+    <div class="wrap" id="rbody"></div>
+    <div class="next-bar">
+      <div class="wrap two">
+        <button type="button" class="back" id="rback">Back</button>
+        <button type="button" class="big" id="rnext">Next</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. Sign-up -->
+  <section id="signup" class="signup wrap">
+    <div class="signup-card">
+      <div class="signup-head">
+        <svg class="hat small" viewBox="102 116 820 536" aria-hidden="true"><use href="#hat"/></svg>
+        <h2>Get the iPhone app when it is out</h2>
+      </div>
+      <p>The app will have full-length timed practice tests and hundreds more questions. At launch it covers the Operatives test and the Managers and Professionals test. Specialist tests will come later. Part of it will be free; full access will be a one-off payment.</p>
+
+      <form id="form" novalidate>
+        <label class="field">Email
+          <input type="email" name="email" id="email" required autocomplete="email" inputmode="email" placeholder="you@example.com">
+        </label>
+        <span class="err" id="emailErr" hidden>Please enter your email address.</span>
+
+        <label class="field">Which test are you taking? <span class="optl">(optional)</span>
+          <select name="test" id="test">
+            <option value="">Choose</option>
+            <option>Operatives</option>
+            <option>Managers and Professionals</option>
+            <option>Specialist (coming later)</option>
+            <option>Not sure</option>
+            <option>Prefer not to say</option>
+          </select>
+        </label>
+
+        <label class="field">Which language would help you most? <span class="optl">(optional)</span>
+          <select name="language" id="language">
+            <option value="">Choose</option>
+            <option>English</option>
+            <option lang="pl">Polski</option>
+            <option lang="ro">Română</option>
+            <option lang="bg">Български</option>
+            <option lang="lt">Lietuvių</option>
+            <option lang="pa">ਪੰਜਾਬੀ</option>
+            <option lang="pt">Português</option>
+            <option>Other</option>
+          </select>
+        </label>
+
+        <input type="hidden" name="source" value="google-questions">
+        <div class="hp" aria-hidden="true">
+          <label>Leave this empty <input type="text" name="website" tabindex="-1" autocomplete="off"></label>
+        </div>
+
+        <p class="layer1">We will email you once, when the app is on the App Store. We also count how many people choose each test and language, to decide what to build first. Nothing else. We delete your details after that email, and by 31 October 2027 at the latest. To stop, write to <span data-fill="email">[business email]</span>, or reply "stop" to our email. <a href="../../privacy.html" id="noticeLink">How we use your details</a></p>
+
+        <button type="submit" class="big" id="send">Email me when it is out</button>
+        <p class="thanks" id="thanks" hidden role="status">Thanks. We will email you once, when the app is out.</p>
+        <p class="err" id="sendErr" hidden role="status"></p>
+      </form>
+
+      <div class="notice" id="notice" hidden>
+        <h3>How we use your details</h3>
+        <p><b>Who we are.</b> HS&amp;E Test Practice is run by Andrew Domakin, a sole trader in the UK. Contact: <span data-fill="email">[business email]</span>, <span data-fill="address">[geographic address]</span>.</p>
+        <p><b>What we collect.</b> Your email address and, if you choose, which test you are taking and a language. We also record the date and time, which version of this notice you saw, and whether you came from our Google ad. We do not ask your name.</p>
+        <p><b>Why, and our legal basis.</b></p>
+        <ul>
+          <li>To email you once when the HS&amp;E Test Practice iPhone app is on the App Store. Our legal basis is your consent, which you give by pressing "Email me when it is out". You do not have to: the practice questions and the mock work without it.</li>
+          <li>To count how many people want each test and each language, and how many came from our Google ad, so we can decide what to build and translate first and whether our ad works. Our legal basis is our legitimate interest in making those decisions. We only ever use these counts as totals. You can object at any time by writing to <span data-fill="email">[business email]</span>.</li>
+        </ul>
+        <p>We do not use your details for anything else.</p>
+        <p><b>Who else has your details.</b> Google, which runs Google Forms: it stores the answers in our Google account and also handles them under its own privacy policy (policies.google.com/privacy). Google may store data in the United States; Google LLC is covered by the UK–US data bridge. GitHub, which hosts this page, records visitors' IP addresses for security. We never sell your details or give them to anyone else.</p>
+        <p><b>How long we keep them.</b> We delete them after we send the launch email, and by 31 October 2027 at the latest, even if the app is not out by then.</p>
+        <p><b>Your rights.</b> You can take back your consent at any time: write to <span data-fill="email">[business email]</span>, or reply "stop" to our email. You can ask for a copy of your details, or ask us to correct or delete them. If you are unhappy with how we use your details, tell us: we will confirm we have your complaint within 30 days and then deal with it. You can also complain to the Information Commissioner's Office: ico.org.uk.</p>
+        <p data-cookies><b>Cookies.</b> This page sets no cookies and uses no tracking.</p>
+        <p>No decisions are made about you by computer.</p>
+        <button type="button" class="again" id="noticeClose">Close</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <p class="foot-brand"><svg class="hat small" viewBox="102 116 820 536" aria-hidden="true"><use href="#hat"/></svg> HS&amp;E Test Practice</p>
+    <p>HS&amp;E Test Practice is an independent website and iPhone app by Andrew Domakin. It is not made, approved or endorsed by CITB or CSCS and has no business connection with them. CITB sets and runs the HS&amp;E test: book the test itself with CITB at citb.co.uk. To apply for a CSCS card you need to have passed the right HS&amp;E test, or an approved alternative. The questions were written for this site from UK law and published guidance, mostly from the Health and Safety Executive. They are not CITB's questions.</p>
+    <p>Run by Andrew Domakin. Contact: <span data-fill="email">[business email]</span>. <span data-fill="address">[geographic address]</span>.</p>
+    <p><a href="../../privacy.html">How we use your details</a><span id="adSettingsWrap" hidden> · <a href="#" id="adSettings">Ad measurement settings</a></span></p>
+    <p class="credits">Contains public sector information published by the Health and Safety Executive and licensed under the Open Government Licence.<br>
+    <a href="https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/">Contains public sector information licensed under the Open Government Licence v3.0.</a></p>
+  </div>
+</footer>
+
+<!-- Option 4B only (config.js GTAG.enabled). Hidden and inert while the tag is off. -->
+<div class="consent" id="consent" hidden role="dialog" aria-label="Ad measurement">
+  <div class="wrap">
+    <p>Can we count whether our Google ad brought you here? If you allow it, Google sets a cookie and tells us when someone who clicked our ad signs up. Google also uses this to measure its ads. It is not needed for the page to work.</p>
+    <p class="consent-more" id="consentMore" hidden>Google receives the ad click, the page visit and the sign-up event. You can change your mind at any time with "Ad measurement settings" at the bottom of the page.</p>
+    <div class="consent-btns">
+      <button type="button" class="cbtn" id="cAllow">Allow</button>
+      <button type="button" class="cbtn" id="cDeny">No thanks</button>
+      <button type="button" class="clink" id="cMore">More</button>
+    </div>
+  </div>
+</div>
+
+<!-- The app icon's hard hat with the tick (same shapes as the app's SiteStyle.swift) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <clipPath id="underside"><rect x="90" y="552" width="850" height="120"/></clipPath>
+    <g id="hatShape">
+      <path d="M142 508 L882 508 Q922 508 922 548 Q922 570 882 570 Q512 638 142 570 Q102 570 102 548 Q102 508 142 508 Z"/>
+      <path d="M194 520 C194 270 315 150 512 150 C709 150 830 270 830 520 Z"/>
+      <rect x="450" y="116" width="124" height="184" rx="62"/>
+    </g>
+    <g id="hat">
+      <use href="#hatShape" fill="#D9A400" transform="translate(0 22)"/>
+      <use href="#hatShape" fill="#1A1A1A"/>
+      <path clip-path="url(#underside)" fill="#3A3A3A" d="M142 508 L882 508 Q922 508 922 548 Q922 570 882 570 Q512 638 142 570 Q102 570 102 548 Q102 508 142 508 Z"/>
+      <path d="M450 166 V262 M574 166 V262 M202 512 H822" stroke="#FFD200" stroke-width="16" stroke-linecap="round" fill="none"/>
+      <path d="M396 372 L478 452 L640 290" stroke="#FFD200" stroke-width="66" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    </g>
+  </defs>
+</svg>
+
+<script src="../../config.js"></script>
+<script src="../../data.js"></script>
+<script src="../../app.js"></script>
+</body>
+</html>
